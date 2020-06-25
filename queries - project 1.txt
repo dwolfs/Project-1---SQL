@@ -1,0 +1,60 @@
+Q1:
+SELECT  film_title, category_name, count(film_title) AS rental_count
+FROM
+	(SELECT c.category_id, c.name category_name, fc.film_id, f.title film_title
+	FROM category c
+	JOIN film_category fc
+	ON c.category_id = fc.category_id
+	JOIN film f
+	ON f.film_id = fc.film_id
+	JOIN inventory i
+	ON i.film_id = f.film_id
+	JOIN rental r
+	ON r.inventory_id = i.inventory_id
+	WHERE c.name IN ('Animation',  'Children' ,'Classics' , 'Comedy' ,'Family', 	'Music' )
+	ORDER BY c.name) q1
+GROUP BY q1.film_title, q1.category_name
+ORDER BY q1.category_name
+
+
+Q2:
+SELECT  category_name, standard_quartile, count(category_name)
+FROM
+	(SELECT c.category_id, c.name category_name, fc.film_id, f.title film_title, 	f.rental_duration,  
+	NTILE(4) OVER (ORDER BY f.rental_duration) AS standard_quartile
+	FROM category c
+	JOIN film_category fc
+	ON c.category_id = fc.category_id
+	JOIN film f
+	ON f.film_id = fc.film_id
+	WHERE c.name IN ('Animation',  'Children' ,'Classics' , 'Comedy' ,'Family', 'Music') ) q3
+GROUP BY q3.category_name, q3.standard_quartile
+ORDER BY q3.category_name, q3.standard_quartile
+
+Q3:
+SELECT
+   	DATE_PART('month', r.rental_date) as Rental_month,
+    	DATE_PART('year', r.rental_date) as Rental_year, 
+	staff.store_id AS Store_ID, 
+	COUNT(*) AS Count_rentals
+	FROM staff 
+	JOIN rental AS r ON r.staff_id = staff.staff_id
+GROUP BY Rental_month, Rental_year, Store_ID
+ORDER BY Count_rentals DESC;
+
+Q4:
+WITH TOP10 AS (
+	SELECT c.customer_id, 
+		c.first_name || ' ' || c.last_name  full_name,
+		SUM(amount) pay_amount
+		FROM payment p
+		JOIN customer c ON p.customer_id = c.customer_id
+	GROUP BY 1, 2
+	ORDER BY 3 DESC
+LIMIT 10)
+
+SELECT  top10.full_name, SUM(p.amount) pay_amount
+	FROM payment p
+	JOIN top10 ON top10.customer_id = p.customer_id
+GROUP BY 1
+ORDER BY 2 DESC
